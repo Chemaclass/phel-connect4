@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "88c4807f50f61866aed1e0078b0ae133",
+    "content-hash": "25b48658d19d6a70eb8114f5abad32fe",
     "packages": [
         {
             "name": "amphp/amp",
@@ -242,16 +242,16 @@
         },
         {
             "name": "phel-lang/phel-lang",
-            "version": "dev-main",
+            "version": "v0.33.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phel-lang/phel-lang.git",
-                "reference": "e0ceb188a45428bb23e2865787d734700d58839f"
+                "reference": "9a2f3669e9a73db07417fbf3af2958ab3f895d6a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/e0ceb188a45428bb23e2865787d734700d58839f",
-                "reference": "e0ceb188a45428bb23e2865787d734700d58839f",
+                "url": "https://api.github.com/repos/phel-lang/phel-lang/zipball/9a2f3669e9a73db07417fbf3af2958ab3f895d6a",
+                "reference": "9a2f3669e9a73db07417fbf3af2958ab3f895d6a",
                 "shasum": ""
             },
             "require": {
@@ -273,7 +273,6 @@
                 "symfony/var-dumper": "^7.4",
                 "vimeo/psalm": "^6.16"
             },
-            "default-branch": true,
             "bin": [
                 "bin/phel"
             ],
@@ -311,7 +310,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phel-lang/phel-lang/issues",
-                "source": "https://github.com/phel-lang/phel-lang/tree/main"
+                "source": "https://github.com/phel-lang/phel-lang/tree/v0.33.0"
             },
             "funding": [
                 {
@@ -319,7 +318,7 @@
                     "type": "custom"
                 }
             ],
-            "time": "2026-04-17T17:30:30+00:00"
+            "time": "2026-04-17T20:07:56+00:00"
         },
         {
             "name": "psr/container",
@@ -1204,9 +1203,7 @@
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "phel-lang/phel-lang": 20
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {},
