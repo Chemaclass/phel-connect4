@@ -3,12 +3,18 @@
         "phel-lang/phel-lang": "^0.33"
     },
     "scripts": {
-        "play": "./vendor/bin/phel run src/phel/main.phel",
+        "play": "@play:2p",
+        "play:2p": "./vendor/bin/phel run src/phel/main.phel",
+        "play:1p": "AI=yellow ./vendor/bin/phel run src/phel/main.phel",
+        "play:ai-first": "AI=red ./vendor/bin/phel run src/phel/main.phel",
         "test": "./vendor/bin/phel test",
         "repl": "./vendor/bin/phel repl"
     },
     "scripts-descriptions": {
-        "play": "Start a Connect 4 game (pass AI=red|yellow and/or AI_DEPTH via env).",
+        "play": "Alias for play:2p.",
+        "play:2p": "Two-player local game (Red vs Yellow, same terminal).",
+        "play:1p": "One-player vs AI; you play Red (move first), AI plays Yellow.",
+        "play:ai-first": "One-player vs AI; AI plays Red (moves first), you play Yellow.",
         "test": "Run the Phel test suite.",
         "repl": "Launch the Phel REPL with this project loaded."
     }

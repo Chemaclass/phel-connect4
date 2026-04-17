@@ -24,17 +24,21 @@ composer install
 
 ## Run
 
-### Human vs human
+Use the composer scripts:
 
 ```bash
-./vendor/bin/phel run src/phel/main.phel
+composer play           # two players (default)
+composer play:2p        # same as above, explicit
+composer play:1p        # vs AI; you play Red (move first), AI plays Yellow
+composer play:ai-first  # vs AI; AI plays Red (moves first), you play Yellow
 ```
 
-### Human vs AI
+Or run directly with env vars:
 
 ```bash
-AI=yellow ./vendor/bin/phel run src/phel/main.phel   # AI plays yellow
-AI=red    ./vendor/bin/phel run src/phel/main.phel   # AI plays red (moves first)
+./vendor/bin/phel run src/phel/main.phel                       # 2 players
+AI=yellow ./vendor/bin/phel run src/phel/main.phel             # AI = yellow
+AI=red AI_DEPTH=6 ./vendor/bin/phel run src/phel/main.phel     # AI first, deeper search
 ```
 
 ## How to play
