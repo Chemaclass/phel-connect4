@@ -6,9 +6,52 @@
 
 (def stdin (php/fopen "php://stdin" "r"))
 
-(def ai-depth
-  (let [env (php/getenv "AI_DEPTH")]
-    (if (= false env) 5 (php/intval env))))
+(def difficulties
+  [{:key "1" :name "easy"   :depth 2}
+   {:key "2" :name "medium" :depth 4}
+   {:key "3" :name "hard"   :depth 6}
+   {:key "4" :name "expert" :depth 7}])
+
+(def default-difficulty "medium")
+
+(defn- read-input []
+  (let [line (php/fgets stdin)]
+    (when (not= false line)
+      (php/trim line))))
+
+(defn- difficulty-by [pred]
+  (first (filter pred difficulties)))
+
+(defn- difficulty-from-env []
+  (let [name-env (php/getenv "DIFFICULTY")
+        depth-env (php/getenv "AI_DEPTH")]
+    (cond
+      (not= false depth-env)
+      {:name (str "custom depth " (php/intval depth-env))
+       :depth (php/intval depth-env)}
+
+      (not= false name-env)
+      (difficulty-by #(= (get % :name) (php/strtolower name-env)))
+
+      :else nil)))
+
+(defn- prompt-difficulty []
+  (println "=== Connect 4 ===")
+  (println "Choose AI difficulty:")
+  (doseq [d difficulties]
+    (println (str "  " (get d :key) ") " (get d :name)
+                  " (depth " (get d :depth) ")")))
+  (print (str "Difficulty [1-4, default=" default-difficulty "]: "))
+  (php/flush)
+  (let [input (read-input)
+        pick  (cond
+                (or (nil? input) (= input ""))
+                (difficulty-by #(= (get % :name) default-difficulty))
+
+                :else
+                (or (difficulty-by #(= (get % :key) input))
+                    (difficulty-by #(= (get % :name) (php/strtolower input)))))]
+    (or pick (difficulty-by #(= (get % :name) default-difficulty)))))
 
 (def ai-player
   (case (php/getenv "AI")
@@ -16,10 +59,12 @@
     "yellow" :yellow
     nil))
 
-(defn- read-input []
-  (let [line (php/fgets stdin)]
-    (when (not= false line)
-      (php/trim line))))
+(def difficulty
+  (when ai-player
+    (or (difficulty-from-env) (prompt-difficulty))))
+
+(def ai-depth
+  (if difficulty (get difficulty :depth) 5))
 
 (defn- last-move [game]
   (let [h (get game :history)]
@@ -29,7 +74,9 @@
   (r/clear-screen)
   (println "=== Connect 4 ===")
   (when ai-player
-    (println (str "AI plays as " (r/display-name ai-player) ", depth " ai-depth)))
+    (println (str "AI plays as " (r/display-name ai-player)
+                  " | difficulty: " (get difficulty :name)
+                  " (depth " ai-depth ")")))
   (println)
   (print (r/render-last-move (last-move game)))
   (println (r/render-board (get game :board))))
