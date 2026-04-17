@@ -36,3 +36,10 @@
                           "|"))]
     (str header "\n"
          (s/join "\n" (map render-row (range 0 rows))))))
+
+(defn render-last-move [last-move]
+  (if (nil? last-move)
+    ""
+    (let [p (get last-move 0)
+          c (get last-move 1)]
+      (str (ansi "2;37" "Last: ") (display-name p) " → column " (+ c 1) "\n"))))

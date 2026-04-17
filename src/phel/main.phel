@@ -8,7 +8,7 @@
 
 (def ai-depth
   (let [env (php/getenv "AI_DEPTH")]
-    (if (= false env) 3 (php/intval env))))
+    (if (= false env) 5 (php/intval env))))
 
 (def ai-player
   (case (php/getenv "AI")
@@ -23,12 +23,20 @@
       nil
       (php/trim line))))
 
+(defn- flush-out []
+  (php/flush))
+
+(defn- last-move [game]
+  (let [h (get game :history)]
+    (if (empty? h) nil (last h))))
+
 (defn- show-board [game]
   (r/clear-screen)
   (println "=== Connect 4 ===")
   (when ai-player
     (println (str "AI plays as " (r/display-name ai-player) ", depth " ai-depth)))
   (println)
+  (print (r/render-last-move (last-move game)))
   (println (r/render-board (get game :board))))
 
 (defn- show-end [game]
@@ -40,15 +48,23 @@
     (println "Game aborted.")))
 
 (defn- ai-turn [game]
-  (let [col (ai/best-move (get game :board) (get game :player) ai-depth)]
-    (show-board game)
-    (println (str (r/display-name (get game :player)) " (AI) plays column " (+ col 1)))
-    (g/step game col)))
+  (show-board game)
+  (let [p (get game :player)
+        label (r/display-name p)]
+    (print (str label " (AI) thinking..."))
+    (flush-out)
+    (let [start (php/microtime true)
+          col (ai/best-move (get game :board) p ai-depth)
+          elapsed (- (php/microtime true) start)]
+      (println (str " column " (+ col 1)
+                    "  (" (php/number_format elapsed 2) "s)"))
+      (g/step game col))))
 
 (defn- human-turn [game]
   (show-board game)
   (print (str (r/display-name (get game :player))
               " > column (1-" b/cols ", u=undo, q=quit): "))
+  (flush-out)
   (let [input (read-input)]
     (cond
       (or (nil? input) (= input "q") (= input "quit")) :quit
