@@ -22,9 +22,9 @@
         (let [[board row] result
               p (get game :player)
               won? (winner? board row col p)
-              status (cond won?                                 :won
-                           (board-full? board)                  :draw
-                           :else                                :playing)]
+              status (cond won?                :won
+                           (board-full? board) :draw
+                           :else               :playing)]
           (TGame board
                  (if won? p (other-player p))
                  (conj (get game :history) [p col])

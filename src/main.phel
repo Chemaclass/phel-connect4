@@ -39,8 +39,8 @@
   (println "=== Connect 4 ===")
   (println "Choose AI difficulty:")
   (doseq [d difficulties]
-    (println (str "  " (get d :key) ") " (get d :name)
-                  " (depth " (get d :depth) ")")))
+         (println (str "  " (get d :key) ") " (get d :name)
+                       " (depth " (get d :depth) ")")))
   (print (str "Difficulty [1-4, default=" default-difficulty "]: "))
   (php/flush)
   (let [input (read-input)
