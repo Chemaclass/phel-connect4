@@ -1,0 +1,62 @@
+(ns tests\connect4-test
+  (:require phel\test :refer [deftest is])
+  (:require app\connect4 :refer [make-board drop-token winner? board-full? cell rows cols]))
+
+(defn- drop-only [board col tok]
+  (first (drop-token board col tok)))
+
+(deftest empty-board-is-empty
+  (is (= :empty (cell (make-board) 0 0)))
+  (is (= :empty (cell (make-board) 5 6)))
+  (is (not (board-full? (make-board)))))
+
+(deftest drop-lands-on-bottom
+  (let [[b row] (drop-token (make-board) 0 :red)]
+    (is (= 5 row))
+    (is (= :red (cell b 5 0)))
+    (is (= :empty (cell b 4 0)))))
+
+(deftest drop-stacks
+  (let [[b1 _]   (drop-token (make-board) 3 :red)
+        [b2 row] (drop-token b1 3 :yellow)]
+    (is (= 4 row))
+    (is (= :yellow (cell b2 4 3)))
+    (is (= :red    (cell b2 5 3)))))
+
+(deftest full-column-rejects-drop
+  (let [b (reduce (fn [acc _] (drop-only acc 0 :red))
+                  (make-board)
+                  (range 0 rows))]
+    (is (nil? (drop-token b 0 :red)))))
+
+(deftest horizontal-win
+  (let [b (-> (make-board)
+              (drop-only 0 :red)
+              (drop-only 1 :red)
+              (drop-only 2 :red)
+              (drop-only 3 :red))]
+    (is (winner? b 5 3 :red))
+    (is (not (winner? b 5 3 :yellow)))))
+
+(deftest vertical-win
+  (let [b (-> (make-board)
+              (drop-only 2 :yellow)
+              (drop-only 2 :yellow)
+              (drop-only 2 :yellow)
+              (drop-only 2 :yellow))]
+    (is (winner? b 2 2 :yellow))))
+
+(deftest diagonal-win
+  (let [b (-> (make-board)
+              (drop-only 0 :red)
+              (drop-only 1 :yellow) (drop-only 1 :red)
+              (drop-only 2 :yellow) (drop-only 2 :yellow) (drop-only 2 :red)
+              (drop-only 3 :yellow) (drop-only 3 :yellow) (drop-only 3 :yellow) (drop-only 3 :red))]
+    (is (winner? b 2 3 :red))))
+
+(deftest no-premature-win
+  (let [b (-> (make-board)
+              (drop-only 0 :red)
+              (drop-only 1 :red)
+              (drop-only 2 :red))]
+    (is (not (winner? b 5 2 :red)))))

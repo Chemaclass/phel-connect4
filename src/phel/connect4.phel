@@ -1,0 +1,75 @@
+(ns app\connect4
+  (:require phel\string :as s))
+
+(def rows 6)
+(def cols 7)
+
+(defn- idx [row col]
+  (+ (* row cols) col))
+
+(defn make-board
+  "Return an empty Connect 4 board as a flat vector of `:empty` cells."
+  []
+  (vec (repeat (* rows cols) :empty)))
+
+(defn cell
+  "Return the cell value at `row` / `col`."
+  [board row col]
+  (get board (idx row col)))
+
+(defn drop-token
+  "Drop `token` into column `col`. Return `[new-board landing-row]`, or nil when full."
+  [board col token]
+  (loop [row (- rows 1)]
+    (cond
+      (< row 0) nil
+      (= :empty (cell board row col)) [(put board (idx row col) token) row]
+      :else (recur (- row 1)))))
+
+(defn- count-dir [board row col dr dc token]
+  (loop [r (+ row dr) c (+ col dc) n 0]
+    (if (and (>= r 0) (< r rows)
+             (>= c 0) (< c cols)
+             (= (cell board r c) token))
+      (recur (+ r dr) (+ c dc) (+ n 1))
+      n)))
+
+(defn winner?
+  "True when `token` at (row, col) closes a 4-in-a-row."
+  [board row col token]
+  (let [pairs [[[0 1]  [0 -1]]
+               [[1 0]  [-1 0]]
+               [[1 1]  [-1 -1]]
+               [[1 -1] [-1 1]]]]
+    (if (some (fn [[[dr1 dc1] [dr2 dc2]]]
+                (>= (+ 1
+                       (count-dir board row col dr1 dc1 token)
+                       (count-dir board row col dr2 dc2 token))
+                    4))
+              pairs)
+      true
+      false)))
+
+(defn board-full?
+  "True when no `:empty` cell remains."
+  [board]
+  (not (some #(= % :empty) board)))
+
+(defn- cell-char [c]
+  (case c
+    :red    "X"
+    :yellow "O"
+    "."))
+
+(defn render
+  "Render the board as a multi-line string with a 1..7 header."
+  [board]
+  (let [header " 1 2 3 4 5 6 7"
+        render-row (fn [r]
+                     (str "|"
+                          (s/join " "
+                                  (map #(cell-char (cell board r %))
+                                       (range 0 cols)))
+                          "|"))]
+    (str header "\n"
+         (s/join "\n" (map render-row (range 0 rows))))))

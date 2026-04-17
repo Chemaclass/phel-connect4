@@ -1,0 +1,59 @@
+(ns app\main
+  (:require app\connect4 :as c4))
+
+(def stdin (php/fopen "php://stdin" "r"))
+
+(defn- read-input []
+  (let [line (php/fgets stdin)]
+    (if (= false line)
+      nil
+      (php/trim line))))
+
+(defn- next-player [p]
+  (if (= p :red) :yellow :red))
+
+(defn- display-name [p]
+  (case p
+    :red    "Red (X)"
+    :yellow "Yellow (O)"
+    (name p)))
+
+(defn play []
+  (println "=== Connect 4 ===")
+  (println "Red is X, Yellow is O. Enter a column (1-7), or q to quit.")
+  (loop [board (c4/make-board) player :red]
+    (println)
+    (println (c4/render board))
+    (print (str (display-name player) " > column: "))
+    (let [input (read-input)]
+      (cond
+        (or (nil? input) (= input "q") (= input "quit"))
+        (println "Game aborted.")
+
+        :else
+        (let [col-num (php/intval input)]
+          (cond
+            (or (< col-num 1) (> col-num c4/cols))
+            (do (println "Invalid input. Enter 1-7 or q.")
+                (recur board player))
+
+            :else
+            (let [result (c4/drop-token board (- col-num 1) player)]
+              (if (nil? result)
+                (do (println "Column full. Try another.")
+                    (recur board player))
+                (let [[new-board row] result
+                      col (- col-num 1)]
+                  (cond
+                    (c4/winner? new-board row col player)
+                    (do (println (c4/render new-board))
+                        (println (str (display-name player) " wins!")))
+
+                    (c4/board-full? new-board)
+                    (do (println (c4/render new-board))
+                        (println "Draw!"))
+
+                    :else
+                    (recur new-board (next-player player))))))))))))
+
+(play)
