@@ -1,98 +1,119 @@
 (ns app\ai
-  (:require app\board :refer [rows cols cell drop-token winner? valid-cols other-player]))
+  (:require app\board :refer [rows cols cell]))
+
+;; Bitboard layout: columns occupy 7 bits each (rows 0-5 plus an unused
+;; separator bit 6). Column c's row r (r=0 bottom) lives at bit c*7+r.
+;; `mask` = bits for all tokens; `pos` = bits for the current player.
+;; Directional shifts cover the four 4-in-a-row axes:
+;;   1  → vertical
+;;   7  → horizontal
+;;   6  → diagonal \
+;;   8  → diagonal /
 
 (def win-score 100000)
-
-(def ^{:private true} window-indices
-  "All 4-in-a-row window coordinate sets, precomputed once."
-  (concat
-    (for [r :range [0 rows] c :range [0 (- cols 3)]]
-      [[r c] [r (+ c 1)] [r (+ c 2)] [r (+ c 3)]])
-    (for [r :range [0 (- rows 3)] c :range [0 cols]]
-      [[r c] [(+ r 1) c] [(+ r 2) c] [(+ r 3) c]])
-    (for [r :range [0 (- rows 3)] c :range [0 (- cols 3)]]
-      [[r c] [(+ r 1) (+ c 1)] [(+ r 2) (+ c 2)] [(+ r 3) (+ c 3)]])
-    (for [r :range [0 (- rows 3)] c :range [3 cols]]
-      [[r c] [(+ r 1) (- c 1)] [(+ r 2) (- c 2)] [(+ r 3) (- c 3)]])))
-
-(defn- score-window [board win token opp]
-  (loop [i 0 mine 0 theirs 0 empt 0]
-    (if (= i 4)
-      (cond
-        (and (> mine 0) (> theirs 0)) 0
-        (= mine 4) 1000
-        (and (= mine 3) (= empt 1)) 50
-        (and (= mine 2) (= empt 2)) 5
-        (= theirs 4) (- 1000)
-        (and (= theirs 3) (= empt 1)) (- 80)
-        (and (= theirs 2) (= empt 2)) (- 4)
-        :else 0)
-      (let [pos (get win i)
-            c (cell board (get pos 0) (get pos 1))]
-        (cond
-          (= c token)  (recur (+ i 1) (+ mine 1) theirs empt)
-          (= c :empty) (recur (+ i 1) mine theirs (+ empt 1))
-          :else        (recur (+ i 1) mine (+ theirs 1) empt))))))
-
-(defn- center-bonus [board token]
-  (let [center (php/intdiv cols 2)]
-    (loop [r 0 acc 0]
-      (if (= r rows)
-        (* acc 3)
-        (recur (+ r 1)
-               (if (= (cell board r center) token) (+ acc 1) acc))))))
-
-(defn evaluate
-  "Static heuristic from `token`'s perspective."
-  [board token]
-  (let [opp (other-player token)]
-    (+ (reduce (fn [acc win] (+ acc (score-window board win token opp)))
-               0
-               window-indices)
-       (center-bonus board token))))
 
 (def ^{:private true} col-order
   (sort-by (fn [c] (php/abs (- c (php/intdiv cols 2)))) (range 0 cols)))
 
-(defn- ordered-valid-cols [board]
-  (filter (fn [c] (= :empty (cell board 0 c))) col-order))
+(def ^{:private true} center-mask (php/<< 63 (* (php/intdiv cols 2) 7)))
 
-(defn- negamax [board token depth alpha beta]
-  (let [valid (ordered-valid-cols board)]
+(defn- col-bottom [c] (php/<< 1 (* c 7)))
+(defn- col-full-mask [c] (php/<< 63 (* c 7)))
+(defn- top-row-bit [c] (php/<< 1 (+ (* c 7) 5)))
+
+(defn- can-play? [mask c]
+  (= 0 (php/& mask (top-row-bit c))))
+
+(defn- next-bit [mask c]
+  (php/& (php/+ mask (col-bottom c)) (col-full-mask c)))
+
+(defn- has-alignment? [pos]
+  (let [m1 (php/& pos (php/>> pos 1))
+        m7 (php/& pos (php/>> pos 7))
+        m6 (php/& pos (php/>> pos 6))
+        m8 (php/& pos (php/>> pos 8))]
+    (or (not= 0 (php/& m1 (php/>> m1 2)))
+        (not= 0 (php/& m7 (php/>> m7 14)))
+        (not= 0 (php/& m6 (php/>> m6 12)))
+        (not= 0 (php/& m8 (php/>> m8 16))))))
+
+(defn- popcount [x]
+  (loop [n x c 0]
+    (if (= n 0) c (recur (php/& n (- n 1)) (+ c 1)))))
+
+(defn- line-score [pos s]
+  (let [pairs   (php/& pos (php/>> pos s))
+        triples (php/& pairs (php/>> pairs s))]
+    (+ (popcount pairs) (* 4 (popcount triples)))))
+
+(defn- player-score [pos]
+  (+ (line-score pos 1)
+     (line-score pos 7)
+     (line-score pos 6)
+     (line-score pos 8)))
+
+(defn- eval-position [pos mask]
+  (let [opp (php/^ mask pos)]
+    (+ (- (player-score pos) (player-score opp))
+       (* 3 (- (popcount (php/& pos center-mask))
+               (popcount (php/& opp center-mask)))))))
+
+(defn- negamax [pos mask depth alpha beta]
+  (let [valid (filter (fn [c] (can-play? mask c)) col-order)]
     (cond
-      (empty? valid) [nil 0]
-      (= depth 0)    [nil (evaluate board token)]
+      (empty? valid)  [nil 0]
+      (= depth 0)     [nil (eval-position pos mask)]
       :else
-      (loop [remaining valid
-             best-col (first valid)
-             best-val (- 0 win-score)
-             a alpha]
-        (if (empty? remaining)
+      (loop [cs valid best-col (first valid) best-val (- 0 win-score) a alpha]
+        (if (empty? cs)
           [best-col best-val]
-          (let [c (first remaining)
-                [new-board row] (drop-token board c token)
-                won? (winner? new-board row c token)
-                val (if won?
-                      (+ win-score depth)
-                      (- (get (negamax new-board (other-player token) (- depth 1) (- 0 beta) (- 0 a)) 1)))
-                better? (> val best-val)
-                nb (if better? c best-col)
-                nv (if better? val best-val)
-                na (if (> nv a) nv a)]
-            (if (>= na beta)
-              [nb nv]
-              (recur (rest remaining) nb nv na))))))))
+          (let [c (first cs)
+                bit (next-bit mask c)
+                new-mine (php/| pos bit)
+                new-mask (php/| mask bit)]
+            (if (has-alignment? new-mine)
+              [c (+ win-score depth)]
+              (let [opp-pos  (php/^ new-mask new-mine)
+                    child    (negamax opp-pos new-mask (- depth 1) (- 0 beta) (- 0 a))
+                    val      (- 0 (get child 1))
+                    better?  (> val best-val)
+                    nb       (if better? c best-col)
+                    nv       (if better? val best-val)
+                    na       (if (> nv a) nv a)]
+                (if (>= na beta)
+                  [nb nv]
+                  (recur (rest cs) nb nv na))))))))))
+
+(defn- board->bb
+  "Convert board vector to [mine mask] bitboards from `token`'s perspective."
+  [board token]
+  (loop [c 0 mine 0 mask 0]
+    (if (= c cols)
+      [mine mask]
+      (let [result
+            (loop [br (- rows 1) m mine k mask h 0]
+              (if (< br 0)
+                [m k]
+                (let [cell-val (cell board br c)]
+                  (if (= cell-val :empty)
+                    [m k]
+                    (let [bit (php/<< 1 (+ (* c 7) h))
+                          k2 (php/| k bit)
+                          m2 (if (= cell-val token) (php/| m bit) m)]
+                      (recur (- br 1) m2 k2 (+ h 1)))))))]
+        (recur (+ c 1) (get result 0) (get result 1))))))
 
 (defn best-move
-  "Pick best column for `token` via minimax + alpha-beta.
-   Opens with the center column to skip the expensive symmetric root search."
+  "Pick best column for `token` via bitboard negamax with alpha-beta."
   [board token depth]
-  (let [valid (ordered-valid-cols board)
-        center (php/intdiv cols 2)]
+  (let [[mine mask] (board->bb board token)]
     (cond
-      (empty? valid) nil
-      (= (count valid) cols)
-        (if (every? #(= % :empty) board)
-          center
-          (get (negamax board token depth (- 0 win-score) win-score) 0))
-      :else (get (negamax board token depth (- 0 win-score) win-score) 0))))
+      (= mask 0) (php/intdiv cols 2)
+      (not (some (fn [c] (can-play? mask c)) col-order)) nil
+      :else (get (negamax mine mask depth (- 0 win-score) win-score) 0))))
+
+(defn evaluate
+  "Public heuristic (kept for API compatibility with tests)."
+  [board token]
+  (let [[mine mask] (board->bb board token)]
+    (eval-position mine mask)))
