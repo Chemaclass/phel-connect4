@@ -1,0 +1,38 @@
+(ns app\render
+  (:require phel\string :as s)
+  (:require app\board :refer [rows cols cell]))
+
+(def ansi-on?
+  (not= "0" (php/getenv "COLOR")))
+
+(defn- ansi [code text]
+  (if ansi-on?
+    (str "\e[" code "m" text "\e[0m")
+    text))
+
+(defn- cell-char [c]
+  (case c
+    :red    (ansi "1;31" "X")
+    :yellow (ansi "1;33" "O")
+    (ansi "2;37" ".")))
+
+(defn display-name [p]
+  (case p
+    :red    (ansi "1;31" "Red (X)")
+    :yellow (ansi "1;33" "Yellow (O)")
+    (name p)))
+
+(defn clear-screen []
+  (when ansi-on?
+    (print "\e[2J\e[H")))
+
+(defn render-board [board]
+  (let [header (ansi "2;37" " 1 2 3 4 5 6 7")
+        render-row (fn [r]
+                     (str "|"
+                          (s/join " "
+                                  (map #(cell-char (cell board r %))
+                                       (range 0 cols)))
+                          "|"))]
+    (str header "\n"
+         (s/join "\n" (map render-row (range 0 rows))))))

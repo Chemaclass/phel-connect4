@@ -1,6 +1,6 @@
-(ns tests\connect4-test
+(ns tests\board-test
   (:require phel\test :refer [deftest is])
-  (:require app\connect4 :refer [make-board drop-token winner? board-full? cell rows cols]))
+  (:require app\board :refer [make-board drop-token winner? board-full? cell rows cols valid-cols other-player]))
 
 (defn- drop-only [board col tok]
   (first (drop-token board col tok)))
@@ -27,7 +27,8 @@
   (let [b (reduce (fn [acc _] (drop-only acc 0 :red))
                   (make-board)
                   (range 0 rows))]
-    (is (nil? (drop-token b 0 :red)))))
+    (is (nil? (drop-token b 0 :red)))
+    (is (not (contains? (set (valid-cols b)) 0)))))
 
 (deftest horizontal-win
   (let [b (-> (make-board)
@@ -60,3 +61,7 @@
               (drop-only 1 :red)
               (drop-only 2 :red))]
     (is (not (winner? b 5 2 :red)))))
+
+(deftest other-player-alternates
+  (is (= :yellow (other-player :red)))
+  (is (= :red (other-player :yellow))))

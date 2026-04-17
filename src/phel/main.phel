@@ -1,7 +1,21 @@
 (ns app\main
-  (:require app\connect4 :as c4))
+  (:require app\board :as b)
+  (:require app\game :as g)
+  (:require app\render :as r)
+  (:require app\ai :as ai))
 
 (def stdin (php/fopen "php://stdin" "r"))
+
+(def ai-depth
+  (let [env (php/getenv "AI_DEPTH")]
+    (if (= false env) 3 (php/intval env))))
+
+(def ai-player
+  (case (php/getenv "AI")
+    "red"    :red
+    "yellow" :yellow
+    false    nil
+    nil))
 
 (defn- read-input []
   (let [line (php/fgets stdin)]
@@ -9,51 +23,51 @@
       nil
       (php/trim line))))
 
-(defn- next-player [p]
-  (if (= p :red) :yellow :red))
+(defn- show-board [game]
+  (r/clear-screen)
+  (println "=== Connect 4 ===")
+  (when ai-player
+    (println (str "AI plays as " (r/display-name ai-player) ", depth " ai-depth)))
+  (println)
+  (println (r/render-board (get game :board))))
 
-(defn- display-name [p]
-  (case p
-    :red    "Red (X)"
-    :yellow "Yellow (O)"
-    (name p)))
+(defn- show-end [game]
+  (show-board game)
+  (println)
+  (case (get game :status)
+    :won  (println (str (r/display-name (get game :winner)) " wins!"))
+    :draw (println "Draw!")
+    (println "Game aborted.")))
+
+(defn- ai-turn [game]
+  (let [col (ai/best-move (get game :board) (get game :player) ai-depth)]
+    (show-board game)
+    (println (str (r/display-name (get game :player)) " (AI) plays column " (+ col 1)))
+    (g/step game col)))
+
+(defn- human-turn [game]
+  (show-board game)
+  (print (str (r/display-name (get game :player))
+              " > column (1-" b/cols ", u=undo, q=quit): "))
+  (let [input (read-input)]
+    (cond
+      (or (nil? input) (= input "q") (= input "quit")) :quit
+      (= input "u") (g/undo game)
+      :else
+      (let [n (php/intval input)]
+        (if (or (< n 1) (> n b/cols))
+          game
+          (g/step game (- n 1)))))))
 
 (defn play []
-  (println "=== Connect 4 ===")
-  (println "Red is X, Yellow is O. Enter a column (1-7), or q to quit.")
-  (loop [board (c4/make-board) player :red]
-    (println)
-    (println (c4/render board))
-    (print (str (display-name player) " > column: "))
-    (let [input (read-input)]
-      (cond
-        (or (nil? input) (= input "q") (= input "quit"))
-        (println "Game aborted.")
-
-        :else
-        (let [col-num (php/intval input)]
-          (cond
-            (or (< col-num 1) (> col-num c4/cols))
-            (do (println "Invalid input. Enter 1-7 or q.")
-                (recur board player))
-
-            :else
-            (let [result (c4/drop-token board (- col-num 1) player)]
-              (if (nil? result)
-                (do (println "Column full. Try another.")
-                    (recur board player))
-                (let [[new-board row] result
-                      col (- col-num 1)]
-                  (cond
-                    (c4/winner? new-board row col player)
-                    (do (println (c4/render new-board))
-                        (println (str (display-name player) " wins!")))
-
-                    (c4/board-full? new-board)
-                    (do (println (c4/render new-board))
-                        (println "Draw!"))
-
-                    :else
-                    (recur new-board (next-player player))))))))))))
+  (loop [game (g/make-game)]
+    (cond
+      (g/game-over? game) (show-end game)
+      (= (get game :player) ai-player) (recur (ai-turn game))
+      :else
+      (let [next (human-turn game)]
+        (if (= next :quit)
+          (show-end (put game :status :aborted))
+          (recur next))))))
 
 (play)

@@ -1,0 +1,98 @@
+(ns app\ai
+  (:require app\board :refer [rows cols cell drop-token winner? valid-cols other-player]))
+
+(def win-score 100000)
+
+(def ^{:private true} window-indices
+  "All 4-in-a-row window coordinate sets, precomputed once."
+  (concat
+    (for [r :range [0 rows] c :range [0 (- cols 3)]]
+      [[r c] [r (+ c 1)] [r (+ c 2)] [r (+ c 3)]])
+    (for [r :range [0 (- rows 3)] c :range [0 cols]]
+      [[r c] [(+ r 1) c] [(+ r 2) c] [(+ r 3) c]])
+    (for [r :range [0 (- rows 3)] c :range [0 (- cols 3)]]
+      [[r c] [(+ r 1) (+ c 1)] [(+ r 2) (+ c 2)] [(+ r 3) (+ c 3)]])
+    (for [r :range [0 (- rows 3)] c :range [3 cols]]
+      [[r c] [(+ r 1) (- c 1)] [(+ r 2) (- c 2)] [(+ r 3) (- c 3)]])))
+
+(defn- score-window [board win token opp]
+  (loop [i 0 mine 0 theirs 0 empt 0]
+    (if (= i 4)
+      (cond
+        (and (> mine 0) (> theirs 0)) 0
+        (= mine 4) 1000
+        (and (= mine 3) (= empt 1)) 50
+        (and (= mine 2) (= empt 2)) 5
+        (= theirs 4) (- 1000)
+        (and (= theirs 3) (= empt 1)) (- 80)
+        (and (= theirs 2) (= empt 2)) (- 4)
+        :else 0)
+      (let [pos (get win i)
+            c (cell board (get pos 0) (get pos 1))]
+        (cond
+          (= c token)  (recur (+ i 1) (+ mine 1) theirs empt)
+          (= c :empty) (recur (+ i 1) mine theirs (+ empt 1))
+          :else        (recur (+ i 1) mine (+ theirs 1) empt))))))
+
+(defn- center-bonus [board token]
+  (let [center (php/intdiv cols 2)]
+    (loop [r 0 acc 0]
+      (if (= r rows)
+        (* acc 3)
+        (recur (+ r 1)
+               (if (= (cell board r center) token) (+ acc 1) acc))))))
+
+(defn evaluate
+  "Static heuristic from `token`'s perspective."
+  [board token]
+  (let [opp (other-player token)]
+    (+ (reduce (fn [acc win] (+ acc (score-window board win token opp)))
+               0
+               window-indices)
+       (center-bonus board token))))
+
+(def ^{:private true} col-order
+  (sort-by (fn [c] (php/abs (- c (php/intdiv cols 2)))) (range 0 cols)))
+
+(defn- ordered-valid-cols [board]
+  (filter (fn [c] (= :empty (cell board 0 c))) col-order))
+
+(defn- negamax [board token depth alpha beta]
+  (let [valid (ordered-valid-cols board)]
+    (cond
+      (empty? valid) [nil 0]
+      (= depth 0)    [nil (evaluate board token)]
+      :else
+      (loop [remaining valid
+             best-col (first valid)
+             best-val (- 0 win-score)
+             a alpha]
+        (if (empty? remaining)
+          [best-col best-val]
+          (let [c (first remaining)
+                [new-board row] (drop-token board c token)
+                won? (winner? new-board row c token)
+                val (if won?
+                      (+ win-score depth)
+                      (- (get (negamax new-board (other-player token) (- depth 1) (- 0 beta) (- 0 a)) 1)))
+                better? (> val best-val)
+                nb (if better? c best-col)
+                nv (if better? val best-val)
+                na (if (> nv a) nv a)]
+            (if (>= na beta)
+              [nb nv]
+              (recur (rest remaining) nb nv na))))))))
+
+(defn best-move
+  "Pick best column for `token` via minimax + alpha-beta.
+   Opens with the center column to skip the expensive symmetric root search."
+  [board token depth]
+  (let [valid (ordered-valid-cols board)
+        center (php/intdiv cols 2)]
+    (cond
+      (empty? valid) nil
+      (= (count valid) cols)
+        (if (every? #(= % :empty) board)
+          center
+          (get (negamax board token depth (- 0 win-score) win-score) 0))
+      :else (get (negamax board token depth (- 0 win-score) win-score) 0))))

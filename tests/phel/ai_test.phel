@@ -1,0 +1,26 @@
+(ns tests\ai-test
+  (:require phel\test :refer [deftest is])
+  (:require app\board :refer [make-board drop-token])
+  (:require app\ai :refer [best-move]))
+
+(defn- drop-only [board col tok]
+  (first (drop-token board col tok)))
+
+(deftest ai-takes-immediate-win
+  ;; red has three in a row on columns 0..2, must play col 3
+  (let [b (-> (make-board)
+              (drop-only 0 :red)
+              (drop-only 1 :red)
+              (drop-only 2 :red))]
+    (is (= 3 (best-move b :red 3)))))
+
+(deftest ai-blocks-opponent-win
+  ;; yellow threatens 4 on columns 0..2, red must block col 3
+  (let [b (-> (make-board)
+              (drop-only 0 :yellow)
+              (drop-only 1 :yellow)
+              (drop-only 2 :yellow))]
+    (is (= 3 (best-move b :red 3)))))
+
+(deftest ai-prefers-center-on-empty-board
+  (is (= 3 (best-move (make-board) :red 2))))

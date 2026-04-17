@@ -1,0 +1,43 @@
+(ns tests\game-test
+  (:require phel\test :refer [deftest is])
+  (:require app\game :refer [make-game step undo game-over?]))
+
+(deftest fresh-game-red-to-move
+  (let [g (make-game)]
+    (is (= :red (get g :player)))
+    (is (= :playing (get g :status)))
+    (is (not (game-over? g)))
+    (is (empty? (get g :history)))))
+
+(deftest step-alternates-players
+  (let [g1 (step (make-game) 3)
+        g2 (step g1 3)]
+    (is (= :yellow (get g1 :player)))
+    (is (= :red (get g2 :player)))
+    (is (= 2 (count (get g2 :history))))))
+
+(deftest step-detects-win
+  (let [g (-> (make-game)
+              (step 0) (step 1)   ; red, yellow
+              (step 0) (step 2)
+              (step 0) (step 3)
+              (step 0))]          ; red 4-in-column 0
+    (is (= :won (get g :status)))
+    (is (= :red (get g :winner)))
+    (is (game-over? g))))
+
+(deftest undo-reverts-move
+  (let [g1 (step (make-game) 3)
+        g2 (undo g1)]
+    (is (= :red (get g2 :player)))
+    (is (empty? (get g2 :history)))))
+
+(deftest undo-on-empty-history-noop
+  (let [g (make-game)]
+    (is (= g (undo g)))))
+
+(deftest invalid-column-returns-same-game
+  (let [g (make-game)
+        ;; fill column 0 then try again
+        full-col (reduce (fn [acc _] (step acc 0)) g (range 0 6))]
+    (is (= full-col (step full-col 0)))))

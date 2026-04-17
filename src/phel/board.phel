@@ -1,5 +1,4 @@
-(ns app\connect4
-  (:require phel\string :as s))
+(ns app\board)
 
 (def rows 6)
 (def cols 7)
@@ -55,21 +54,10 @@
   [board]
   (not (some #(= % :empty) board)))
 
-(defn- cell-char [c]
-  (case c
-    :red    "X"
-    :yellow "O"
-    "."))
-
-(defn render
-  "Render the board as a multi-line string with a 1..7 header."
+(defn valid-cols
+  "Columns with at least one empty cell, left-to-right."
   [board]
-  (let [header " 1 2 3 4 5 6 7"
-        render-row (fn [r]
-                     (str "|"
-                          (s/join " "
-                                  (map #(cell-char (cell board r %))
-                                       (range 0 cols)))
-                          "|"))]
-    (str header "\n"
-         (s/join "\n" (map render-row (range 0 rows))))))
+  (filter (fn [c] (= :empty (cell board 0 c))) (range 0 cols)))
+
+(defn other-player [p]
+  (if (= p :red) :yellow :red))
