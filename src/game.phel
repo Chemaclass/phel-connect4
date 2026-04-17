@@ -1,5 +1,5 @@
-(ns app\game
-  (:require app\board :refer [make-board drop-token winner? board-full? other-player]))
+(ns connect4\game
+  (:require connect4\board :refer [make-board drop-token winner? board-full? other-player]))
 
 (defstruct TGame [board player history status winner prev])
 

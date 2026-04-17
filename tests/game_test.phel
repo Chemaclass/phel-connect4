@@ -1,6 +1,6 @@
 (ns tests\game-test
   (:require phel\test :refer [deftest is])
-  (:require app\game :refer [make-game step undo game-over?]))
+  (:require connect4\game :refer [make-game step undo game-over?]))
 
 (deftest fresh-game-red-to-move
   (let [g (make-game)]

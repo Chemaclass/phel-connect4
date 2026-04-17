@@ -1,4 +1,4 @@
-(ns app\board)
+(ns connect4\board)
 
 (def rows 6)
 (def cols 7)

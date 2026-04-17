@@ -1,6 +1,6 @@
-(ns app\render
+(ns connect4\render
   (:require phel\string :as s)
-  (:require app\board :refer [rows cols cell]))
+  (:require connect4\board :refer [rows cols cell]))
 
 (def ansi-on?
   (not= "0" (php/getenv "COLOR")))

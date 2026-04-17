@@ -1,8 +1,8 @@
-(ns app\main
-  (:require app\board :as b)
-  (:require app\game :as g)
-  (:require app\render :as r)
-  (:require app\ai :as ai))
+(ns connect4\main
+  (:require connect4\board :as b)
+  (:require connect4\game :as g)
+  (:require connect4\render :as r)
+  (:require connect4\ai :as ai))
 
 (def stdin (php/fopen "php://stdin" "r"))
 
