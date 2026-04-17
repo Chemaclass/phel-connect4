@@ -4,9 +4,9 @@
     },
     "scripts": {
         "play": "@play:2p",
-        "play:2p": "./vendor/bin/phel run src/phel/main.phel",
-        "play:1p": "AI=yellow ./vendor/bin/phel run src/phel/main.phel",
-        "play:ai-first": "AI=red ./vendor/bin/phel run src/phel/main.phel",
+        "play:2p": "./vendor/bin/phel run src/main.phel",
+        "play:1p": "AI=yellow ./vendor/bin/phel run src/main.phel",
+        "play:ai-first": "AI=red ./vendor/bin/phel run src/main.phel",
         "test": "./vendor/bin/phel test",
         "repl": "./vendor/bin/phel repl"
     },
