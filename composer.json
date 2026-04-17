@@ -1,5 +1,15 @@
 {
     "require": {
         "phel-lang/phel-lang": "^0.33"
+    },
+    "scripts": {
+        "play": "./vendor/bin/phel run src/phel/main.phel",
+        "test": "./vendor/bin/phel test",
+        "repl": "./vendor/bin/phel repl"
+    },
+    "scripts-descriptions": {
+        "play": "Start a Connect 4 game (pass AI=red|yellow and/or AI_DEPTH via env).",
+        "test": "Run the Phel test suite.",
+        "repl": "Launch the Phel REPL with this project loaded."
     }
 }

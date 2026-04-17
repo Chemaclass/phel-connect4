@@ -14,21 +14,16 @@
   (case (php/getenv "AI")
     "red"    :red
     "yellow" :yellow
-    false    nil
     nil))
 
 (defn- read-input []
   (let [line (php/fgets stdin)]
-    (if (= false line)
-      nil
+    (when (not= false line)
       (php/trim line))))
-
-(defn- flush-out []
-  (php/flush))
 
 (defn- last-move [game]
   (let [h (get game :history)]
-    (if (empty? h) nil (last h))))
+    (when (not (empty? h)) (last h))))
 
 (defn- show-board [game]
   (r/clear-screen)
@@ -49,36 +44,41 @@
 
 (defn- ai-turn [game]
   (show-board game)
-  (let [p (get game :player)
-        label (r/display-name p)]
-    (print (str label " (AI) thinking..."))
-    (flush-out)
-    (let [start (php/microtime true)
-          col (ai/best-move (get game :board) p ai-depth)
+  (let [p (get game :player)]
+    (print (str (r/display-name p) " (AI) thinking..."))
+    (php/flush)
+    (let [start   (php/microtime true)
+          col     (ai/best-move (get game :board) p ai-depth)
           elapsed (- (php/microtime true) start)]
-      (println (str " column " (+ col 1)
-                    "  (" (php/number_format elapsed 2) "s)"))
+      (println (str " column " (+ col 1) "  (" (php/number_format elapsed 2) "s)"))
       (g/step game col))))
+
+(defn- parse-input [input]
+  (cond
+    (or (nil? input) (= input "q") (= input "quit")) :quit
+    (= input "u")                                    :undo
+    :else
+    (let [n (php/intval input)]
+      (if (and (>= n 1) (<= n b/cols))
+        (- n 1)
+        :invalid))))
 
 (defn- human-turn [game]
   (show-board game)
   (print (str (r/display-name (get game :player))
               " > column (1-" b/cols ", u=undo, q=quit): "))
-  (flush-out)
-  (let [input (read-input)]
+  (php/flush)
+  (let [action (parse-input (read-input))]
     (cond
-      (or (nil? input) (= input "q") (= input "quit")) :quit
-      (= input "u") (g/undo game)
-      :else
-      (let [n (php/intval input)]
-        (if (or (< n 1) (> n b/cols))
-          game
-          (g/step game (- n 1)))))))
+      (= action :quit)    :quit
+      (= action :undo)    (g/undo game)
+      (= action :invalid) game
+      :else               (g/step game action))))
 
 (defn play []
   (loop [game (g/make-game)]
     (cond
-      (g/game-over? game) (show-end game)
+      (g/game-over? game)              (show-end game)
       (= (get game :player) ai-player) (recur (ai-turn game))
       :else
       (let [next (human-turn game)]

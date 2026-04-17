@@ -1,40 +1,38 @@
 (ns app\game
   (:require app\board :refer [make-board drop-token winner? board-full? other-player]))
 
-(defstruct TGame [board player history status winner])
+(defstruct TGame [board player history status winner prev])
 
 (defn make-game
   "Fresh game; Red moves first."
   []
-  (TGame (make-board) :red [] :playing nil))
+  (TGame (make-board) :red [] :playing nil nil))
 
 (defn game-over? [game]
   (not= :playing (get game :status)))
 
 (defn step
-  "Apply a move in `col`. Invalid/full column returns game unchanged."
+  "Apply a move in `col`. Invalid or full column returns the game unchanged."
   [game col]
   (if (game-over? game)
     game
-    (let [b (get game :board)
-          p (get game :player)
-          result (drop-token b col p)]
+    (let [result (drop-token (get game :board) col (get game :player))]
       (if (nil? result)
         game
-        (let [[new-board row] result
-              won? (winner? new-board row col p)
-              full? (and (not won?) (board-full? new-board))
-              status (cond won? :won full? :draw :else :playing)
-              next-p (if won? p (other-player p))
-              history (conj (get game :history) [p col])]
-          (TGame new-board next-p history status (if won? p nil)))))))
+        (let [[board row] result
+              p (get game :player)
+              won? (winner? board row col p)
+              status (cond won?                                 :won
+                           (board-full? board)                  :draw
+                           :else                                :playing)]
+          (TGame board
+                 (if won? p (other-player p))
+                 (conj (get game :history) [p col])
+                 status
+                 (if won? p nil)
+                 game))))))
 
 (defn undo
-  "Rewind one move by replaying history minus the last entry."
+  "Return the game state before the last move; a no-op on a fresh game."
   [game]
-  (let [h (get game :history)]
-    (if (empty? h)
-      game
-      (reduce (fn [g move] (step g (get move 1)))
-              (make-game)
-              (butlast h)))))
+  (or (get game :prev) game))

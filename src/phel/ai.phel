@@ -17,6 +17,8 @@
 
 (def ^{:private true} center-mask (php/<< 63 (* (php/intdiv cols 2) 7)))
 
+(def ^{:private true} axis-shifts [1 7 6 8])
+
 (defn- col-bottom [c] (php/<< 1 (* c 7)))
 (defn- col-full-mask [c] (php/<< 63 (* c 7)))
 (defn- top-row-bit [c] (php/<< 1 (+ (* c 7) 5)))
@@ -47,10 +49,7 @@
     (+ (popcount pairs) (* 4 (popcount triples)))))
 
 (defn- player-score [pos]
-  (+ (line-score pos 1)
-     (line-score pos 7)
-     (line-score pos 6)
-     (line-score pos 8)))
+  (reduce (fn [acc s] (+ acc (line-score pos s))) 0 axis-shifts))
 
 (defn- eval-position [pos mask]
   (let [opp (php/^ mask pos)]

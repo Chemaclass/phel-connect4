@@ -41,3 +41,17 @@
         ;; fill column 0 then try again
         full-col (reduce (fn [acc _] (step acc 0)) g (range 0 6))]
     (is (= full-col (step full-col 0)))))
+
+(deftest undo-chain-walks-back-to-start
+  (let [g3 (-> (make-game) (step 0) (step 1) (step 2))
+        g0 (-> g3 undo undo undo)]
+    (is (= :red (get g0 :player)))
+    (is (empty? (get g0 :history)))
+    (is (= g0 (undo g0)))))
+
+(deftest no-move-after-game-over
+  (let [won (-> (make-game)
+                (step 0) (step 1) (step 0) (step 1)
+                (step 0) (step 1) (step 0))]
+    (is (= :won (get won :status)))
+    (is (= won (step won 3)))))
