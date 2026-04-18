@@ -23,7 +23,7 @@
 (defn- col-full-mask [c] (php/<< 63 (* c 7)))
 (defn- top-row-bit [c] (php/<< 1 (+ (* c 7) 5)))
 
-(defn- can-play? [mask c]
+(defn-  can-play? [mask c]
   (= 0 (php/& mask (top-row-bit c))))
 
 (defn- next-bit [mask c]
@@ -60,25 +60,25 @@
 (defn- negamax [pos mask depth alpha beta]
   (let [valid (filter (fn [c] (can-play? mask c)) col-order)]
     (cond
-      (empty? valid)  [nil 0]
-      (= depth 0)     [nil (eval-position pos mask)]
+      (empty? valid) [nil 0]
+      (= depth 0)    [nil (eval-position pos mask)]
       :else
       (loop [cs valid best-col (first valid) best-val (- 0 win-score) a alpha]
         (if (empty? cs)
           [best-col best-val]
-          (let [c (first cs)
-                bit (next-bit mask c)
+          (let [c        (first cs)
+                bit      (next-bit mask c)
                 new-mine (php/| pos bit)
                 new-mask (php/| mask bit)]
             (if (has-alignment? new-mine)
               [c (+ win-score depth)]
-              (let [opp-pos  (php/^ new-mask new-mine)
-                    child    (negamax opp-pos new-mask (- depth 1) (- 0 beta) (- 0 a))
-                    val      (- 0 (get child 1))
-                    better?  (> val best-val)
-                    nb       (if better? c best-col)
-                    nv       (if better? val best-val)
-                    na       (if (> nv a) nv a)]
+              (let [opp-pos (php/^ new-mask new-mine)
+                    child   (negamax opp-pos new-mask (- depth 1) (- 0 beta) (- 0 a))
+                    val     (- 0 (get child 1))
+                    better? (> val best-val)
+                    nb      (if better? c best-col)
+                    nv      (if better? val best-val)
+                    na      (if (> nv a) nv a)]
                 (if (>= na beta)
                   [nb nv]
                   (recur (rest cs) nb nv na))))))))))
@@ -97,8 +97,8 @@
                   (if (= cell-val :empty)
                     [m k]
                     (let [bit (php/<< 1 (+ (* c 7) h))
-                          k2 (php/| k bit)
-                          m2 (if (= cell-val token) (php/| m bit) m)]
+                          k2  (php/| k bit)
+                          m2  (if (= cell-val token) (php/| m bit) m)]
                       (recur (- br 1) m2 k2 (+ h 1)))))))]
         (recur (+ c 1) (get result 0) (get result 1))))))
 
@@ -107,9 +107,9 @@
   [board token depth]
   (let [[mine mask] (board->bb board token)]
     (cond
-      (= mask 0) (php/intdiv cols 2)
+      (= mask 0)                                         (php/intdiv cols 2)
       (not (some (fn [c] (can-play? mask c)) col-order)) nil
-      :else (get (negamax mine mask depth (- 0 win-score) win-score) 0))))
+      :else                                              (get (negamax mine mask depth (- 0 win-score) win-score) 0))))
 
 (defn evaluate
   "Public heuristic (kept for API compatibility with tests)."

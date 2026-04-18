@@ -37,7 +37,7 @@
     (is (= g (undo g)))))
 
 (deftest invalid-column-returns-same-game
-  (let [g (make-game)
+  (let [g        (make-game)
         ;; fill column 0 then try again
         full-col (reduce (fn [acc _] (step acc 0)) g (range 0 6))]
     (is (= full-col (step full-col 0)))))

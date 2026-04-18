@@ -21,9 +21,9 @@
   [board col token]
   (loop [row (- rows 1)]
     (cond
-      (< row 0) nil
+      (< row 0)                       nil
       (= :empty (cell board row col)) [(put board (idx row col) token) row]
-      :else (recur (- row 1)))))
+      :else                           (recur (- row 1)))))
 
 (defn- count-dir [board row col dr dc token]
   (loop [r (+ row dr) c (+ col dc) n 0]

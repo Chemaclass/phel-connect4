@@ -23,7 +23,7 @@
   (first (filter pred difficulties)))
 
 (defn- difficulty-from-env []
-  (let [name-env (php/getenv "DIFFICULTY")
+  (let [name-env  (php/getenv "DIFFICULTY")
         depth-env (php/getenv "AI_DEPTH")]
     (cond
       (not= false depth-env)
@@ -33,7 +33,7 @@
       (not= false name-env)
       (difficulty-by #(= (get % :name) (php/strtolower name-env)))
 
-      :else nil)))
+      :else                  nil)))
 
 (defn- prompt-difficulty []
   (println "=== Connect 4 ===")
@@ -133,4 +133,5 @@
           (show-end (put game :status :aborted))
           (recur next))))))
 
-(play)
+(when-not *build-mode*
+  (play))
