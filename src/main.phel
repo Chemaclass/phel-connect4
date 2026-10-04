@@ -128,10 +128,10 @@
       (g/game-over? game)              (show-end game)
       (= (get game :player) ai-player) (recur (ai-turn game))
       :else
-      (let [next (human-turn game)]
-        (if (= next :quit)
+      (let [after-human (human-turn game)]
+        (if (= after-human :quit)
           (show-end (assoc game :status :aborted))
-          (recur next))))))
+          (recur after-human))))))
 
 (when-not *build-mode*
   (play))

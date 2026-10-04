@@ -36,16 +36,16 @@
 (defn winner?
   "True when `token` at (row, col) closes a 4-in-a-row."
   [board row col token]
-  (let [pairs [[[0 1]  [0 -1]]
-               [[1 0]  [-1 0]]
-               [[1 1]  [-1 -1]]
-               [[1 -1] [-1 1]]]]
+  (let [axes [[[0 1]  [0 -1]]
+              [[1 0]  [-1 0]]
+              [[1 1]  [-1 -1]]
+              [[1 -1] [-1 1]]]]
     (if (some (fn [[[dr1 dc1] [dr2 dc2]]]
                 (>= (+ 1
                        (count-dir board row col dr1 dc1 token)
                        (count-dir board row col dr2 dc2 token))
                     4))
-              pairs)
+              axes)
       true
       false)))
 
