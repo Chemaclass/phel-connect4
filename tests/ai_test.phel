@@ -1,7 +1,7 @@
-(ns tests\ai-test
-  (:require phel\test :refer [deftest is])
-  (:require connect4\board :refer [make-board drop-token])
-  (:require connect4\ai :refer [best-move]))
+(ns tests.ai-test
+  (:require phel.test :refer [deftest is])
+  (:require connect4.board :refer [make-board drop-token])
+  (:require connect4.ai :refer [best-move]))
 
 (defn- drop-only [board col tok]
   (first (drop-token board col tok)))

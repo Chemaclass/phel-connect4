@@ -1,4 +1,4 @@
-(ns connect4\board)
+(ns connect4.board)
 
 (def rows 6)
 (def cols 7)
@@ -22,7 +22,7 @@
   (loop [row (- rows 1)]
     (cond
       (< row 0)                       nil
-      (= :empty (cell board row col)) [(put board (idx row col) token) row]
+      (= :empty (cell board row col)) [(assoc board (idx row col) token) row]
       :else                           (recur (- row 1)))))
 
 (defn- count-dir [board row col dr dc token]

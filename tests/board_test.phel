@@ -1,6 +1,6 @@
-(ns tests\board-test
-  (:require phel\test :refer [deftest is])
-  (:require connect4\board :refer [make-board drop-token winner? board-full? cell rows cols valid-cols other-player]))
+(ns tests.board-test
+  (:require phel.test :refer [deftest is])
+  (:require connect4.board :refer [make-board drop-token winner? board-full? cell rows cols valid-cols other-player]))
 
 (defn- drop-only [board col tok]
   (first (drop-token board col tok)))

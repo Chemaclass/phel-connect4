@@ -1,5 +1,5 @@
-(ns connect4\ai
-  (:require connect4\board :refer [rows cols cell]))
+(ns connect4.ai
+  (:require connect4.board :refer [rows cols cell]))
 
 ;; Bitboard layout: columns occupy 7 bits each (rows 0-5 plus an unused
 ;; separator bit 6). Column c's row r (r=0 bottom) lives at bit c*7+r.
