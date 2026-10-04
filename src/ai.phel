@@ -1,5 +1,5 @@
-(ns connect4\ai
-  (:require connect4\board :refer [rows cols cell]))
+(ns connect4.ai
+  (:require connect4.board :refer [rows cols cell]))
 
 ;; Bitboard layout: columns occupy 7 bits each (rows 0-5 plus an unused
 ;; separator bit 6). Column c's row r (r=0 bottom) lives at bit c*7+r.
@@ -44,9 +44,9 @@
     (if (= n 0) c (recur (php/& n (- n 1)) (+ c 1)))))
 
 (defn- line-score [pos s]
-  (let [pairs   (php/& pos (php/>> pos s))
-        triples (php/& pairs (php/>> pairs s))]
-    (+ (popcount pairs) (* 4 (popcount triples)))))
+  (let [twos    (php/& pos (php/>> pos s))
+        triples (php/& twos (php/>> twos s))]
+    (+ (popcount twos) (* 4 (popcount triples)))))
 
 (defn- player-score [pos]
   (reduce (fn [acc s] (+ acc (line-score pos s))) 0 axis-shifts))
@@ -74,10 +74,10 @@
               [c (+ win-score depth)]
               (let [opp-pos (php/^ new-mask new-mine)
                     child   (negamax opp-pos new-mask (- depth 1) (- 0 beta) (- 0 a))
-                    val     (- 0 (get child 1))
-                    better? (> val best-val)
+                    score   (- 0 (get child 1))
+                    better? (> score best-val)
                     nb      (if better? c best-col)
-                    nv      (if better? val best-val)
+                    nv      (if better? score best-val)
                     na      (if (> nv a) nv a)]
                 (if (>= na beta)
                   [nb nv]

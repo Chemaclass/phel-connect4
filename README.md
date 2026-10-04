@@ -16,7 +16,7 @@ Red (X) wins!
 
 ## Install
 
-Requires PHP 8.3+ and Composer.
+Requires PHP 8.5+ and Composer.
 
 ```bash
 composer install

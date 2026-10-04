@@ -1,8 +1,8 @@
-(ns connect4\main
-  (:require connect4\board :as b)
-  (:require connect4\game :as g)
-  (:require connect4\render :as r)
-  (:require connect4\ai :as ai))
+(ns connect4.main
+  (:require connect4.board :as b)
+  (:require connect4.game :as g)
+  (:require connect4.render :as r)
+  (:require connect4.ai :as ai))
 
 (def stdin (php/fopen "php://stdin" "r"))
 
@@ -128,10 +128,10 @@
       (g/game-over? game)              (show-end game)
       (= (get game :player) ai-player) (recur (ai-turn game))
       :else
-      (let [next (human-turn game)]
-        (if (= next :quit)
-          (show-end (put game :status :aborted))
-          (recur next))))))
+      (let [after-human (human-turn game)]
+        (if (= after-human :quit)
+          (show-end (assoc game :status :aborted))
+          (recur after-human))))))
 
 (when-not *build-mode*
   (play))
